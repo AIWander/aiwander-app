@@ -1,10 +1,10 @@
-const DRIVER = process.env.DRIVER_URL || "http://129.212.181.146:8009";
+import { DRIVER_URL, driverHeaders } from "@/lib/driver";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const res = await fetch(`${DRIVER}/run`, {
+  const res = await fetch(`${DRIVER_URL}/run`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: driverHeaders({ "content-type": "application/json" }),
     body: JSON.stringify(body),
   });
 

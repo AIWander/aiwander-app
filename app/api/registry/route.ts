@@ -1,7 +1,10 @@
-const DRIVER = process.env.DRIVER_URL || "http://129.212.181.146:8009";
+import { DRIVER_URL, driverHeaders } from "@/lib/driver";
 
 export async function GET() {
-  const res = await fetch(`${DRIVER}/registry`, { cache: "no-store" });
+  const res = await fetch(`${DRIVER_URL}/registry`, {
+    cache: "no-store",
+    headers: driverHeaders(),
+  });
   const data = await res.json();
   return Response.json(data);
 }
