@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   description: "AI agent chat with live browser preview",
 };
 
+// Force dynamic rendering — the root page is a client component with
+// streaming chat / live state. Static prerender produced a shell that
+// curl accepted but real browsers couldn't hydrate (Chrome / Edge would
+// time out with "This page couldn't load" while curl returned 200).
+// force-dynamic makes Vercel serve a fresh render every request.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
