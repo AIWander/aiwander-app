@@ -9,12 +9,18 @@ interface BrowserPaneProps {
   lastBrowserUrl?: string;
 }
 
-const NOVNC_URL = "http://129.212.181.146:6080/vnc.html?autoconnect=1&resize=remote&view_only=1";
+// HTTPS ngrok tunnel pointing at the droplet's noVNC :6080.
+// HTTPS so the iframe doesn't trigger mixed-content blocking when the
+// page is served over HTTPS (Vercel). On free-tier ngrok, users see a
+// one-time "Visit Site" interstitial page in the iframe; clicking
+// through allows noVNC to load. Upgrade ngrok or move to Caddy + LE
+// to remove the interstitial.
+const NOVNC_URL =
+  "https://heartaching-beakless-yanira.ngrok-free.dev/vnc.html?autoconnect=1&resize=remote&view_only=1";
 
 export function BrowserPane({ isStreaming, lastBrowserUrl }: BrowserPaneProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [iframeError, setIframeError] = useState(false);
-  const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
 
   return (
     <div className={`flex flex-col border-b border-border ${collapsed ? "h-10" : "h-full"}`}>
@@ -61,13 +67,11 @@ export function BrowserPane({ isStreaming, lastBrowserUrl }: BrowserPaneProps) {
 
       {!collapsed && (
         <div className="flex-1 overflow-hidden">
-          {isHttps || iframeError ? (
+          {iframeError ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted/30 p-6 text-center">
               <Globe className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
-                {isHttps
-                  ? "Live browser preview unavailable over HTTPS (mixed content)."
-                  : "Browser preview could not load."}
+                Browser preview could not load.
               </p>
               <a
                 href={NOVNC_URL}
@@ -84,7 +88,7 @@ export function BrowserPane({ isStreaming, lastBrowserUrl }: BrowserPaneProps) {
               src={NOVNC_URL}
               className="h-full w-full border-0"
               title="Live browser view via noVNC"
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-forms"
               onError={() => setIframeError(true)}
             />
           )}
