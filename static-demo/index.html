@@ -191,7 +191,12 @@ async function send() {
     const r = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_prompt: text, max_iterations: 8 }),
+      body: JSON.stringify({
+        model: 'gpt-oss-20b',
+        mcp_servers: ['hands'],
+        user_prompt: text,
+        max_iterations: 8,
+      }),
     });
     if (!r.ok) {
       addAssistantMessage(`Error: HTTP ${r.status}`);
@@ -212,10 +217,10 @@ async function send() {
         if (!json) continue;
         try {
           const ev = JSON.parse(json);
-          if (ev.type === 'iteration_start') addIteration(ev.iteration);
-          else if (ev.type === 'tool_call') addToolCall(ev.id, ev.name, ev.args || '', ev.iteration);
-          else if (ev.type === 'tool_result') addToolResult(ev.id, ev.ok, ev.content || '');
-          else if (ev.type === 'final_answer') {
+          if (ev.kind === 'iteration_start') addIteration(ev.iteration);
+          else if (ev.kind === 'tool_call') addToolCall(ev.id, ev.name, JSON.stringify(ev.arguments || ev.args || {}), ev.iteration);
+          else if (ev.kind === 'tool_result') addToolResult(ev.id, ev.ok !== false, typeof ev.content === 'string' ? ev.content : JSON.stringify(ev.content || ev.result || {}));
+          else if (ev.kind === 'final_answer') {
             if (!assistantPre) assistantPre = addAssistantMessage('');
             assistantPre.textContent = ev.content || '';
           }
