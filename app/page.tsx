@@ -1,63 +1,98 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback } from "react";
+import { Dashboard } from "@/components/Dashboard";
+import { Chat } from "@/components/Chat";
+import { BrowserPane } from "@/components/BrowserPane";
+
+interface LiveToolCall {
+  id: string;
+  name: string;
+  iteration: number;
+  args: string;
+  result?: { ok: boolean; content: string };
+}
 
 export default function Home() {
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [lastBrowserUrl, setLastBrowserUrl] = useState<string | undefined>();
+  const [liveToolCalls, setLiveToolCalls] = useState<LiveToolCall[]>([]);
+  const [liveReasoning, setLiveReasoning] = useState<
+    { iteration: number; content: string }[]
+  >([]);
+
+  const handleRunStart = useCallback(() => {
+    setLiveToolCalls([]);
+    setLiveReasoning([]);
+  }, []);
+
+  const handleToolCall = useCallback((tc: LiveToolCall) => {
+    setLiveToolCalls((prev) => [...prev, tc]);
+  }, []);
+
+  const handleToolResult = useCallback(
+    (id: string, result: { ok: boolean; content: string }) => {
+      setLiveToolCalls((prev) =>
+        prev.map((tc) => (tc.id === id ? { ...tc, result } : tc))
+      );
+    },
+    []
+  );
+
+  const handleReasoning = useCallback(
+    (r: { iteration: number; content: string }) => {
+      setLiveReasoning((prev) => [...prev, r]);
+    },
+    []
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen flex-col lg:flex-row">
+      {/* Left: Dashboard (33%) */}
+      <aside className="order-3 h-64 shrink-0 overflow-hidden border-t border-border lg:order-1 lg:h-full lg:w-1/3 lg:border-r lg:border-t-0">
+        <Dashboard
+          liveToolCalls={liveToolCalls}
+          liveReasoning={liveReasoning}
+          isRunning={isStreaming}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </aside>
+
+      {/* Right (67%): Browser top + Chat bottom */}
+      <main className="flex min-h-0 flex-1 flex-col lg:order-2">
+        {/* Browser pane (top half on desktop, collapsible on mobile) */}
+        <div className="hidden h-1/2 lg:block">
+          <BrowserPane
+            isStreaming={isStreaming}
+            lastBrowserUrl={lastBrowserUrl}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Mobile browser toggle */}
+        <div className="lg:hidden">
+          <details className="border-b border-border">
+            <summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground">
+              Browser Preview
+            </summary>
+            <div className="h-64">
+              <BrowserPane
+                isStreaming={isStreaming}
+                lastBrowserUrl={lastBrowserUrl}
+              />
+            </div>
+          </details>
+        </div>
+
+        {/* Chat pane (bottom half on desktop, main content on mobile) */}
+        <div className="order-1 min-h-0 flex-1 lg:order-2 lg:border-t lg:border-border">
+          <Chat
+            onStreamingChange={setIsStreaming}
+            onBrowserAction={setLastBrowserUrl}
+            onToolCall={handleToolCall}
+            onToolResult={handleToolResult}
+            onReasoning={handleReasoning}
+            onRunStart={handleRunStart}
+            onRunEnd={() => {}}
+          />
         </div>
       </main>
     </div>
